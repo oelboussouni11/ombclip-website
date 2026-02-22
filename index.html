@@ -1,0 +1,883 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>OMBClip — Never Lose a Copy Again</title>
+    <link
+      rel="icon"
+      type="image/svg+xml"
+      href="data:image/svg+xml,%3Csvg viewBox='0 0 36 36' fill='none' stroke='%23c4f042' stroke-width='2' xmlns='http://www.w3.org/2000/svg'%3E%3Crect x='10' y='3' width='22' height='22' rx='3'/%3E%3Crect x='3' y='10' width='22' height='22' rx='3'/%3E%3C/svg%3E"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg: #0a0a0a;
+        --surface: #141414;
+        --border: #222;
+        --text: #e8e8e8;
+        --text-muted: #777;
+        --accent: #c4f042;
+        --accent-dim: #c4f04215;
+      }
+
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family: "DM Sans", sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        overflow-x: hidden;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* Noise texture overlay */
+      body::before {
+        content: "";
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1000;
+      }
+
+      /* Navigation */
+      nav {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        padding: 20px 40px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        z-index: 100;
+        backdrop-filter: blur(20px);
+        background: #0a0a0acc;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .nav-logo {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-family: "Instrument Serif", serif;
+        font-size: 1.3rem;
+        letter-spacing: -0.02em;
+      }
+
+      .nav-logo svg {
+        width: 28px;
+        height: 28px;
+      }
+
+      .nav-links {
+        display: flex;
+        gap: 32px;
+        align-items: center;
+      }
+
+      .nav-links a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.9rem;
+        font-weight: 400;
+        transition: color 0.3s;
+      }
+
+      .nav-links a:not(.nav-download):hover {
+        color: var(--text);
+      }
+
+      .nav-download {
+        background: var(--accent);
+        color: var(--bg);
+        padding: 10px 24px;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-decoration: none;
+        transition: all 0.3s;
+        letter-spacing: 0.02em;
+      }
+
+      .nav-download:hover {
+        transform: scale(1.05);
+        box-shadow: 0 0 30px #c4f04244;
+        color: var(--bg);
+      }
+
+      /* Hero Section */
+      .hero {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 120px 40px 80px;
+        position: relative;
+      }
+
+      .hero::after {
+        content: "";
+        position: absolute;
+        top: 20%;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 600px;
+        height: 600px;
+        background: radial-gradient(circle, #c4f04208 0%, transparent 70%);
+        pointer-events: none;
+      }
+
+      .hero-badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 16px;
+        border: 1px solid var(--border);
+        border-radius: 100px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        margin-bottom: 40px;
+        animation: fadeUp 0.8s ease-out;
+      }
+
+      .hero-badge span {
+        width: 6px;
+        height: 6px;
+        background: var(--accent);
+        border-radius: 50%;
+        animation: pulse 2s infinite;
+      }
+
+      .hero h1 {
+        font-family: "Instrument Serif", serif;
+        font-size: clamp(3rem, 8vw, 6.5rem);
+        font-weight: 400;
+        line-height: 1.05;
+        letter-spacing: -0.03em;
+        max-width: 800px;
+        animation: fadeUp 0.8s ease-out 0.1s both;
+      }
+
+      .hero h1 em {
+        font-style: italic;
+        color: var(--accent);
+      }
+
+      .hero-sub {
+        font-size: 1.15rem;
+        color: var(--text-muted);
+        max-width: 460px;
+        margin-top: 28px;
+        line-height: 1.7;
+        font-weight: 300;
+        animation: fadeUp 0.8s ease-out 0.2s both;
+      }
+
+      .hero-cta {
+        display: flex;
+        gap: 16px;
+        margin-top: 48px;
+        animation: fadeUp 0.8s ease-out 0.3s both;
+      }
+
+      .btn-primary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--accent);
+        color: var(--bg);
+        padding: 16px 36px;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-decoration: none;
+        transition: all 0.3s;
+        letter-spacing: 0.01em;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 40px #c4f04233;
+        color: var(--bg);
+      }
+
+      .btn-primary svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 10px;
+        background: transparent;
+        color: var(--text);
+        padding: 16px 36px;
+        border-radius: 100px;
+        font-weight: 500;
+        font-size: 0.95rem;
+        text-decoration: none;
+        border: 1px solid var(--border);
+        transition: all 0.3s;
+      }
+
+      .btn-secondary:hover {
+        border-color: var(--text-muted);
+        background: #ffffff08;
+      }
+
+      .hero-platform {
+        margin-top: 20px;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        animation: fadeUp 0.8s ease-out 0.4s both;
+      }
+
+      /* App Preview */
+      .preview {
+        padding: 0 40px 120px;
+        display: flex;
+        justify-content: center;
+        animation: fadeUp 0.8s ease-out 0.5s both;
+      }
+
+      .preview-window {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        width: 380px;
+        overflow: hidden;
+        box-shadow: 0 40px 80px rgba(0, 0, 0, 0.5);
+      }
+
+      .preview-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+
+      .preview-header svg {
+        width: 20px;
+        height: 20px;
+        opacity: 0.6;
+      }
+
+      .preview-header span {
+        font-size: 0.85rem;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+
+      .preview-item {
+        padding: 14px 20px;
+        border-bottom: 1px solid #1a1a1a;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s;
+        cursor: pointer;
+      }
+
+      .preview-item:hover {
+        background: #1a1a1a;
+      }
+
+      .preview-item-text {
+        font-size: 0.88rem;
+        color: var(--text);
+        font-weight: 400;
+      }
+
+      .preview-item-time {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        font-family: "DM Sans", monospace;
+        white-space: nowrap;
+        margin-left: 16px;
+      }
+
+      .preview-footer {
+        padding: 12px 20px;
+        display: flex;
+        justify-content: space-between;
+      }
+
+      .preview-footer span {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .preview-footer span:hover {
+        color: var(--text);
+      }
+
+      /* Features Section */
+      .features {
+        padding: 120px 40px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .section-label {
+        font-size: 0.8rem;
+        color: var(--accent);
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        font-weight: 600;
+        margin-bottom: 20px;
+      }
+
+      .section-title {
+        font-family: "Instrument Serif", serif;
+        font-size: clamp(2rem, 4vw, 3.2rem);
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin-bottom: 60px;
+        max-width: 500px;
+        line-height: 1.15;
+      }
+
+      .features-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 24px;
+      }
+
+      .feature-card {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 16px;
+        padding: 36px 30px;
+        transition: all 0.4s;
+      }
+
+      .feature-card:hover {
+        border-color: #333;
+        transform: translateY(-4px);
+      }
+
+      .feature-icon {
+        width: 44px;
+        height: 44px;
+        background: var(--accent-dim);
+        border: 1px solid #c4f04222;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+      }
+
+      .feature-icon svg {
+        width: 20px;
+        height: 20px;
+        stroke: var(--accent);
+      }
+
+      .feature-card h3 {
+        font-size: 1.05rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+        letter-spacing: -0.01em;
+      }
+
+      .feature-card p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.65;
+        font-weight: 300;
+      }
+
+      /* How it works */
+      .how-it-works {
+        padding: 120px 40px;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      .steps {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 48px;
+        margin-top: 60px;
+      }
+
+      .step {
+        position: relative;
+      }
+
+      .step-number {
+        font-family: "Instrument Serif", serif;
+        font-size: 4rem;
+        color: var(--accent);
+        line-height: 1;
+        margin-bottom: 16px;
+      }
+
+      .step h3 {
+        font-size: 1.1rem;
+        font-weight: 500;
+        margin-bottom: 10px;
+      }
+
+      .step p {
+        font-size: 0.88rem;
+        color: var(--text-muted);
+        line-height: 1.65;
+        font-weight: 300;
+      }
+
+      /* CTA Section */
+      .cta {
+        padding: 120px 40px;
+        text-align: center;
+      }
+
+      .cta-inner {
+        max-width: 800px;
+        margin: 0 auto;
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: 24px;
+        padding: 80px 60px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .cta-inner::before {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(
+          circle at 50% 120%,
+          #c4f04208 0%,
+          transparent 50%
+        );
+        pointer-events: none;
+      }
+
+      .cta h2 {
+        font-family: "Instrument Serif", serif;
+        font-size: clamp(2rem, 4vw, 3rem);
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        margin-bottom: 16px;
+      }
+
+      .cta p {
+        color: var(--text-muted);
+        font-size: 1.05rem;
+        margin-bottom: 36px;
+        font-weight: 300;
+      }
+
+      /* Footer */
+      footer {
+        padding: 40px;
+        border-top: 1px solid var(--border);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        max-width: 1100px;
+        margin: 0 auto;
+      }
+
+      footer span {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+      }
+
+      footer a {
+        color: var(--text-muted);
+        text-decoration: none;
+        font-size: 0.82rem;
+        transition: color 0.3s;
+      }
+
+      footer a:hover {
+        color: var(--text);
+      }
+
+      /* Animations */
+      @keyframes fadeUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.4;
+        }
+      }
+
+      /* Responsive */
+      @media (max-width: 768px) {
+        nav {
+          padding: 16px 24px;
+        }
+
+        .nav-links {
+          display: none;
+        }
+
+        .hero {
+          padding: 120px 24px 60px;
+        }
+
+        .hero-cta {
+          flex-direction: column;
+          align-items: center;
+        }
+
+        .features-grid,
+        .steps {
+          grid-template-columns: 1fr;
+        }
+
+        .features,
+        .how-it-works {
+          padding: 80px 24px;
+        }
+
+        .cta-inner {
+          padding: 48px 28px;
+        }
+
+        footer {
+          flex-direction: column;
+          gap: 12px;
+          text-align: center;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Navigation -->
+    <nav>
+      <div class="nav-logo">
+        <svg
+          viewBox="0 0 36 36"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+        >
+          <rect x="10" y="3" width="22" height="22" rx="3" />
+          <rect x="3" y="10" width="22" height="22" rx="3" />
+        </svg>
+        OMBClip
+      </div>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="https://github.com/oelboussouni11/ombclip" target="_blank"
+          >GitHub</a
+        >
+        <a href="#download" class="nav-download">Download</a>
+      </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="hero-badge">
+        <span></span>
+        Free &amp; Open Source — macOS
+      </div>
+      <h1>Never lose a<br /><em>copy</em> again</h1>
+      <p class="hero-sub">
+        A tiny menu bar app that remembers everything you copy. Lightweight,
+        fast, and always one click away.
+      </p>
+      <div class="hero-cta">
+        <a href="#download" class="btn-primary">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Download for Mac
+        </a>
+        <a
+          href="https://github.com/oelboussouni11/ombclip"
+          target="_blank"
+          class="btn-secondary"
+          >View Source</a
+        >
+      </div>
+      <p class="hero-platform">macOS 12+ · Apple Silicon &amp; Intel</p>
+    </section>
+
+    <!-- App Preview -->
+    <section class="preview">
+      <div class="preview-window">
+        <div class="preview-header">
+          <svg
+            viewBox="0 0 36 36"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+          >
+            <rect x="10" y="3" width="22" height="22" rx="3" />
+            <rect x="3" y="10" width="22" height="22" rx="3" />
+          </svg>
+          <span>OMBClip</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-item-text"
+            >https://github.com/oelboussouni11</span
+          >
+          <span class="preview-item-time">20:14</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-item-text">npm install ombclip</span>
+          <span class="preview-item-time">20:12</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-item-text"
+            >Meeting notes from standup call...</span
+          >
+          <span class="preview-item-time">20:08</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-item-text"
+            >Design feedback: update hero section</span
+          >
+          <span class="preview-item-time">19:55</span>
+        </div>
+        <div class="preview-item">
+          <span class="preview-item-text"
+            >ssh deploy@production-server.com</span
+          >
+          <span class="preview-item-time">19:41</span>
+        </div>
+        <div class="preview-footer">
+          <span>Clear History</span>
+          <span>Quit</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features -->
+    <section class="features" id="features">
+      <p class="section-label">Features</p>
+      <h2 class="section-title">Simple by design, powerful by default</h2>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="3" width="7" height="7" />
+              <rect x="14" y="3" width="7" height="7" />
+              <rect x="14" y="14" width="7" height="7" />
+              <rect x="3" y="14" width="7" height="7" />
+            </svg>
+          </div>
+          <h3>Lives in your menu bar</h3>
+          <p>
+            Always accessible with a single click. No dock icon, no clutter —
+            just a clean icon next to your wifi.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <polyline points="12 6 12 12 16 14" />
+            </svg>
+          </div>
+          <h3>Timestamped history</h3>
+          <p>
+            Every copy is logged with the exact time, so you can always find
+            what you copied and when.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          </div>
+          <h3>One click to re-copy</h3>
+          <p>
+            Click any item in your history and it's instantly back on your
+            clipboard, ready to paste.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+            </svg>
+          </div>
+          <h3>Private &amp; local</h3>
+          <p>
+            Everything stays on your Mac. No cloud, no accounts, no tracking.
+            Your data is yours alone.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M5 12h14M12 5l7 7-7 7" />
+            </svg>
+          </div>
+          <h3>Lightweight</h3>
+          <p>
+            Uses barely any memory or CPU. Runs silently in the background
+            without slowing down your Mac.
+          </p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon">
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path
+                d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"
+              />
+              <polyline points="15 3 21 3 21 9" />
+              <line x1="10" y1="14" x2="21" y2="3" />
+            </svg>
+          </div>
+          <h3>Open source</h3>
+          <p>
+            Fully transparent. Inspect the code, contribute, or fork it to make
+            it your own.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="how-it-works" id="how-it-works">
+      <p class="section-label">How it works</p>
+      <h2 class="section-title">Up and running in seconds</h2>
+      <div class="steps">
+        <div class="step">
+          <div class="step-number">01</div>
+          <h3>Download &amp; install</h3>
+          <p>
+            Download the .dmg, drag the app to your Applications folder, and
+            launch it.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">02</div>
+          <h3>Copy as usual</h3>
+          <p>
+            Use Cmd+C like you normally would. OMBClip automatically saves
+            everything in the background.
+          </p>
+        </div>
+        <div class="step">
+          <div class="step-number">03</div>
+          <h3>Click to re-copy</h3>
+          <p>
+            Click the icon in your menu bar, find what you need, click it — and
+            paste it anywhere.
+          </p>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta" id="download">
+      <div class="cta-inner">
+        <h2>Ready to stop losing copies?</h2>
+        <p>Free, open source, and built for macOS.</p>
+        <a href="#" class="btn-primary" id="download-btn">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Download for Mac
+        </a>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <span>&copy; 2026 OMBClip</span>
+      <a href="https://github.com/oelboussouni11/ombclip" target="_blank"
+        >GitHub</a
+      >
+    </footer>
+  </body>
+</html>
